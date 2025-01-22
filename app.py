@@ -1,6 +1,4 @@
 from flask import Flask, render_template, request, jsonify
-import os
-import json
 
 app = Flask(__name__)
 
@@ -9,6 +7,9 @@ names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"]
 
 # Dictionary to store selected names and associated emails
 selected_names = {}
+
+# Dictionary to store emails and their purchased names
+email_purchases = {}
 
 @app.route('/')
 def index():
@@ -26,8 +27,14 @@ def select_name():
     if name not in names:
         return jsonify({"error": "Invalid name"}), 400
 
-    # Mark the name as selected
+    # Associate the name with the email
     selected_names[name] = email
+
+    # Add the name to the email's purchases
+    if email in email_purchases:
+        email_purchases[email].append(name)
+    else:
+        email_purchases[email] = [name]
 
     # Remove the name from the list
     names.remove(name)
@@ -44,7 +51,6 @@ def payment():
     if name not in selected_names or selected_names[name] != email:
         return jsonify({"error": "Invalid selection or email"}), 400
 
-    # Simulate payment processing
     if payment_method not in ["venmo", "cashapp"]:
         return jsonify({"error": "Invalid payment method"}), 400
 
