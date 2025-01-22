@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Name Selection</title>
+    <style>
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .name-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .selected {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Select a Name</h1>
+    <div class="grid" id="nameGrid"></div>
+    <div id="paymentForm" style="display: none;">
+        <h2>Payment</h2>
+        <input type="email" id="email" placeholder="Enter your email" required>
+        <select id="paymentMethod">
+            <option value="venmo">Venmo</option>
+            <option value="cashapp">Cash App</option>
+        </select>
+        <button onclick="processPayment()">Pay</button>
+    </div>
+    <script>
+        const names = {{ names|tojson }};
+        const nameGrid = document.getElementById('nameGrid');
+        let selectedName = null;
+
+        function renderGrid() {
+            nameGrid.innerHTML = '';
+            names.forEach(name => {
+                const nameBox = document.createElement('div');
+                nameBox.className = 'name-box';
+                nameBox.textContent = name;
+                nameBox.onclick = () => selectName(name);
+                nameGrid.appendChild(nameBox);
+            });
+        }
+
+        function selectName(name) {
+            selectedName = name;
+            document.querySelectorAll('.name-box').forEach(box => {
+                box.classList.remove('selected');
+                if (box.textContent === name) {
+                    box.classList.add('selected');
+                }
+            });
+            document.getElementById('paymentForm').style.display = 'block';
+        }
+
+        function processPayment() {
+            const email = document.getElementById('email').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+
+            fetch('/select_name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: selectedName, email: email }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    return fetch('/payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name: selectedName, email: email, payment_method: paymentMethod }),
+                    });
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(`Payment successful! Your key pair is: ${data.key_pair}`);
+                    names.splice(names.indexOf(selectedName), 1);
+                    renderGrid();
+                    document.getElementById('paymentForm').style.display = 'none';
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+
+        renderGrid();
+    </script>
+</body>
+</html>
