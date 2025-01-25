@@ -33,10 +33,17 @@
         </select>
         <button onclick="processPayment()">Pay</button>
     </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const names = {{ names|tojson }};
+        const socket = io();
+        let names = {{ names|tojson }};
         const nameGrid = document.getElementById('nameGrid');
         let selectedName = null;
+
+        socket.on('update_names', (data) => {
+            names = data.names;
+            renderGrid();
+        });
 
         function renderGrid() {
             nameGrid.innerHTML = '';

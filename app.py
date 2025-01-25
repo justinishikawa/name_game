@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, jsonify
+from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # List of names
 names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"]
@@ -40,6 +42,9 @@ def select_name():
     # Remove the name from the list
     names.remove(name)
 
+    # Emit an event to update all clients
+    socketio.emit('update_names', {'names': [name for name in names if name not in selected_names]})
+
     return jsonify({"message": "Name selected successfully"})
 
 @app.route('/payment', methods=['POST'])
@@ -61,4 +66,4 @@ def payment():
     return jsonify({"message": "Payment successful", "key_pair": key_pair})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=True)
