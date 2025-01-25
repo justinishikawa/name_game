@@ -13,7 +13,8 @@ email_purchases = {}
 
 @app.route('/')
 def index():
-    return render_template('index.html', names=names)
+    available_names = [name for name in names if name not in selected_names]
+    return render_template('index.html', names=available_names)
 
 @app.route('/select_name', methods=['POST'])
 def select_name():
