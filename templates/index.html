@@ -40,7 +40,12 @@
         const nameGrid = document.getElementById('nameGrid');
         let selectedName = null;
 
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+
         socket.on('update_names', (data) => {
+            console.log('Received update_names event:', data);
             names = data.names;
             renderGrid();
         });

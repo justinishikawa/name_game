@@ -43,7 +43,9 @@ def select_name():
     names.remove(name)
 
     # Emit an event to update all clients
-    socketio.emit('update_names', {'names': [name for name in names if name not in selected_names]})
+    available_names = [name for name in names if name not in selected_names]
+    print(f"Emitting update_names event with names: {available_names}")
+    socketio.emit('update_names', {'names': available_names})
 
     return jsonify({"message": "Name selected successfully"})
 
