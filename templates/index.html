@@ -33,22 +33,20 @@
         </select>
         <button onclick="processPayment()">Pay</button>
     </div>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
-        const socket = io();
         let names = {{ names|tojson }};
         const nameGrid = document.getElementById('nameGrid');
         let selectedName = null;
 
-        socket.on('connect', () => {
-            console.log('Connected to server');
-        });
-
-        socket.on('update_names', (data) => {
-            console.log('Received update_names event:', data);
-            names = data.names;
-            renderGrid();
-        });
+        function fetchAvailableNames() {
+            fetch('/available_names')
+                .then(response => response.json())
+                .then(data => {
+                    names = data.names;
+                    renderGrid();
+                })
+                .catch(error => console.error('Error fetching available names:', error));
+        }
 
         function renderGrid() {
             nameGrid.innerHTML = '';
@@ -103,8 +101,7 @@
                     alert(data.error);
                 } else {
                     alert(`Payment successful! Your key pair is: ${data.key_pair}`);
-                    names.splice(names.indexOf(selectedName), 1);
-                    renderGrid();
+                    fetchAvailableNames();
                     document.getElementById('paymentForm').style.display = 'none';
                 }
             })
@@ -113,6 +110,9 @@
                 alert('An error occurred. Please try again.');
             });
         }
+
+        // Poll the server every 5 seconds for updates
+        setInterval(fetchAvailableNames, 5000);
 
         renderGrid();
     </script>
