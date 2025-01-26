@@ -5,79 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Name Selection</title>
     <style>
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 10px;
-        }
-        .name-box {
-            border: 1px solid #ccc;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-        }
-        .selected {
-            background-color: #e0e0e0;
-        }
+        /* Add your CSS styles here */
     </style>
 </head>
 <body>
     <h1>Select a Name</h1>
-    <div class="grid" id="nameGrid"></div>
-    <div id="paymentForm" style="display: none;">
-        <h2>Name & Payment Method</h2>
-        <input type="text" id="firstName" placeholder="Enter your first name" required>
-        <input type="text" id="lastName" placeholder="Enter your last name" required>
-        <input type="email" id="email" placeholder="Enter your email" required>
-        <select id="paymentMethod">
-            <option value="venmo">Venmo</option>
-            <option value="cashapp">Cash App</option>
-            <option value="zelle">Zelle</option>
-            <option value="paypal">PayPal</option>
-        </select>
-        <button onclick="processPayment()">Reserve</button>
-    </div>
-    <script>
-        let names = {{ names|tojson }};
-        const nameGrid = document.getElementById('nameGrid');
-        let selectedName = null;
+    <select id="nameSelect">
+        {% for name in names %}
+        <option value="{{ name }}">{{ name }}</option>
+        {% endfor %}
+    </select>
+    <button id="randomButton">Random</button>
+    <input type="text" id="nameInput" placeholder="Selected Name">
+    <input type="email" id="emailInput" placeholder="Email">
+    <input type="text" id="firstNameInput" placeholder="First Name">
+    <input type="text" id="lastNameInput" placeholder="Last Name">
+    <h2>Payment Method</h2>
+    <select id="paymentMethod">
+        <option value="venmo">Venmo</option>
+        <option value="cashapp">Cash App</option>
+        <option value="zelle">Zelle</option>
+        <option value="paypal">PayPal</option>
+    </select>
+    <button id="reserveButton">Reserve</button>
 
-        function fetchAvailableNames() {
-            fetch('/available_names')
+    <script>
+        document.getElementById('nameSelect').addEventListener('change', function() {
+            document.getElementById('nameInput').value = this.value;
+        });
+
+        document.getElementById('randomButton').addEventListener('click', function() {
+            fetch('/random_name')
                 .then(response => response.json())
                 .then(data => {
-                    names = data.names;
-                    renderGrid();
+                    if (data.name) {
+                        document.getElementById('nameInput').value = data.name;
+                        document.getElementById('nameSelect').value = data.name;
+                    } else {
+                        alert('No names available');
+                    }
                 })
-                .catch(error => console.error('Error fetching available names:', error));
-        }
+                .catch(error => console.error('Error:', error));
+        });
 
-        function renderGrid() {
-            nameGrid.innerHTML = '';
-            names.forEach(name => {
-                const nameBox = document.createElement('div');
-                nameBox.className = 'name-box';
-                nameBox.textContent = name;
-                nameBox.onclick = () => selectName(name);
-                nameGrid.appendChild(nameBox);
-            });
-        }
-
-        function selectName(name) {
-            selectedName = name;
-            document.querySelectorAll('.name-box').forEach(box => {
-                box.classList.remove('selected');
-                if (box.textContent === name) {
-                    box.classList.add('selected');
-                }
-            });
-            document.getElementById('paymentForm').style.display = 'block';
-        }
-
-        function processPayment() {
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const email = document.getElementById('email').value;
+        document.getElementById('reserveButton').addEventListener('click', function() {
+            const name = document.getElementById('nameInput').value;
+            const email = document.getElementById('emailInput').value;
+            const firstName = document.getElementById('firstNameInput').value;
+            const lastName = document.getElementById('lastNameInput').value;
             const paymentMethod = document.getElementById('paymentMethod').value;
 
             fetch('/select_name', {
@@ -85,28 +60,33 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name: selectedName, email: email, first_name: firstName, last_name: lastName, payment_method: paymentMethod }),
+                body: JSON.stringify({
+                    name: name,
+                    email: email,
+                    first_name: firstName,
+                    last_name: lastName,
+                    payment_method: paymentMethod
+                }),
             })
             .then(response => response.json())
             .then(data => {
-                if (data.error) {
-                    alert(data.error);
+                if (data.message) {
+                    alert('Name reserved successfully!');
+                    // Update the UI to reflect the reservation
+                    const option = document.querySelector(`option[value="${name}"]`);
+                    if (option) {
+                        option.remove();
+                    }
+                    document.getElementById('nameInput').value = '';
+                    document.getElementById('emailInput').value = '';
+                    document.getElementById('firstNameInput').value = '';
+                    document.getElementById('lastNameInput').value = '';
                 } else {
-                    alert(`Reservation successful!`);
-                    fetchAvailableNames();
-                    document.getElementById('paymentForm').style.display = 'none';
+                    alert('Error: ' + data.error);
                 }
             })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
-        }
-
-        // Poll the server every 5 seconds for updates
-        setInterval(fetchAvailableNames, 5000);
-
-        renderGrid();
+            .catch(error => console.error('Error:', error));
+        });
     </script>
 </body>
 </html>
