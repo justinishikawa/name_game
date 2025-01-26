@@ -11,18 +11,6 @@ load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-
-app = Flask(__name__)
-
-# List of names
-names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"]
-
-# Dictionary to store selected names and associated emails
-selected_names = {}
-
-# Dictionary to store emails and their purchased names
-email_purchases = {}
-
 # Database connection details
 DATABASE_URI = os.getenv("DATABASE_URI")
 
@@ -32,8 +20,9 @@ def get_db_connection():
 
 def initialize_database():
     logging.info("Initializing database...")
-    conn = get_db_connection()
+    conn = None
     try:
+        conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("""
                 DROP TABLE IF EXISTS selected_names;
@@ -50,8 +39,23 @@ def initialize_database():
         logging.info("Database initialized successfully.")
     except Exception as e:
         logging.error(f"Error initializing database: {e}")
+        if conn:
+            conn.rollback()
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+
+app = Flask(__name__)
+initialize_database()  # Call the function here
+
+# List of names
+names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"]
+
+# Dictionary to store selected names and associated emails
+selected_names = {}
+
+# Dictionary to store emails and their purchased names
+email_purchases = {}
 
 @app.route('/')
 def index():
@@ -79,10 +83,8 @@ def select_name():
 
     if name in selected_names:
         return jsonify({"error": "Name already selected"}), 400
-
     if name not in names:
         return jsonify({"error": "Invalid name"}), 400
-
     if payment_method not in ["venmo", "cashapp", "zelle", "paypal"]:
         return jsonify({"error": "Invalid payment method"}), 400
 
@@ -128,7 +130,6 @@ def payment():
 
     if name not in selected_names or selected_names[name] != email:
         return jsonify({"error": "Invalid selection or email"}), 400
-
     if payment_method not in ["venmo", "cashapp", "zelle", "paypal"]:
         return jsonify({"error": "Invalid payment method"}), 400
 
@@ -157,5 +158,4 @@ def payment():
     return jsonify({"message": f"{first_name} {last_name} ({email}) reserved {name}", "key_pair": key_pair})
 
 if __name__ == '__main__':
-    initialize_database()
     app.run(debug=True)
