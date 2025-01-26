@@ -1,4 +1,11 @@
 from flask import Flask, render_template, request, jsonify
+import psycopg
+from psycopg.rows import dict_row
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 
@@ -10,6 +17,13 @@ selected_names = {}
 
 # Dictionary to store emails and their purchased names
 email_purchases = {}
+
+# Database connection details
+DATABASE_URI = os.getenv("DATABASE_URI")
+
+def get_db_connection():
+    conn = psycopg.connect(DATABASE_URI, row_factory=dict_row)
+    return conn
 
 @app.route('/')
 def index():
@@ -39,6 +53,20 @@ def select_name():
 
     # Remove the name from the list
     names.remove(name)
+
+    # Insert the selected name and email into the database
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO selected_names (name, email) VALUES (%s, %s)",
+                (name, email)
+            )
+        conn.commit()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
     return jsonify({"message": "Name selected successfully"})
 
