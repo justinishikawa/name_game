@@ -3,6 +3,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
+import re
 
 # Load environment variables from .env file
 load_dotenv()
@@ -60,6 +61,16 @@ def select_name():
     last_name = data.get('last_name')
     payment_method = data.get('payment_method')
 
+    # Validate email format
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return jsonify({"error": "Invalid email format"}), 400
+
+    # Validate first and last name (only allow letters and spaces)
+    if not re.match(r"^[a-zA-Z\s]+$", first_name):
+        return jsonify({"error": "Invalid first name format"}), 400
+    if not re.match(r"^[a-zA-Z\s]+$", last_name):
+        return jsonify({"error": "Invalid last name format"}), 400
+
     if name in selected_names:
         return jsonify({"error": "Name already selected"}), 400
 
@@ -112,13 +123,32 @@ def payment():
     if name not in selected_names or selected_names[name] != email:
         return jsonify({"error": "Invalid selection or email"}), 400
 
-    if payment_method not in ["venmo", "cashapp"]:
+    if payment_method not in ["venmo", "cashapp", "zelle", "paypal"]:
         return jsonify({"error": "Invalid payment method"}), 400
+
+    # Fetch first name and last name from the database
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT first_name, last_name FROM selected_names WHERE name = %s AND email = %s",
+                (name, email)
+            )
+            result = cur.fetchone()
+            if result:
+                first_name = result['first_name']
+                last_name = result['last_name']
+            else:
+                return jsonify({"error": "Name and email not found in database"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
     # Generate a simple key pair (in a real app, use proper encryption)
     key_pair = f"{email}:{name}"
 
-    return jsonify({"message": "Payment successful", "key_pair": key_pair})
+    return jsonify({"message": f"{first_name} {last_name} ({email}) reserved {name}", "key_pair": key_pair})
 
 if __name__ == '__main__':
     initialize_database()
