@@ -4,9 +4,13 @@ from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
 import re
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 
@@ -27,6 +31,7 @@ def get_db_connection():
     return conn
 
 def initialize_database():
+    logging.info("Initializing database...")
     conn = get_db_connection()
     try:
         with conn.cursor() as cur:
@@ -42,8 +47,9 @@ def initialize_database():
                 );
             """)
         conn.commit()
+        logging.info("Database initialized successfully.")
     except Exception as e:
-        print(f"Error initializing database: {e}")
+        logging.error(f"Error initializing database: {e}")
     finally:
         conn.close()
 
@@ -152,4 +158,4 @@ def payment():
 
 if __name__ == '__main__':
     initialize_database()
-    #app.run(debug=True)
+    app.run(debug=True)
