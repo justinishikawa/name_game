@@ -25,13 +25,17 @@
     <h1>Select a Name</h1>
     <div class="grid" id="nameGrid"></div>
     <div id="paymentForm" style="display: none;">
-        <h2>Payment</h2>
+        <h2>Name & Payment Method</h2>
+        <input type="text" id="firstName" placeholder="Enter your first name" required>
+        <input type="text" id="lastName" placeholder="Enter your last name" required>
         <input type="email" id="email" placeholder="Enter your email" required>
         <select id="paymentMethod">
             <option value="venmo">Venmo</option>
             <option value="cashapp">Cash App</option>
+            <option value="zelle">Zelle</option>
+            <option value="paypal">PayPal</option>
         </select>
-        <button onclick="processPayment()">Pay</button>
+        <button onclick="processPayment()">Reserve</button>
     </div>
     <script>
         let names = {{ names|tojson }};
@@ -71,6 +75,8 @@
         }
 
         function processPayment() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
             const email = document.getElementById('email').value;
             const paymentMethod = document.getElementById('paymentMethod').value;
 
@@ -79,21 +85,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ name: selectedName, email: email }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                } else {
-                    return fetch('/payment', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ name: selectedName, email: email, payment_method: paymentMethod }),
-                    });
-                }
+                body: JSON.stringify({ name: selectedName, email: email, first_name: firstName, last_name: lastName, payment_method: paymentMethod }),
             })
             .then(response => response.json())
             .then(data => {
