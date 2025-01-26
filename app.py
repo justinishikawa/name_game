@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, jsonify
-import psycopg
-from psycopg.rows import dict_row
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 import os
 
@@ -22,7 +22,7 @@ email_purchases = {}
 DATABASE_URI = os.getenv("DATABASE_URI")
 
 def get_db_connection():
-    conn = psycopg.connect(DATABASE_URI, row_factory=dict_row)
+    conn = psycopg2.connect(DATABASE_URI, cursor_factory=RealDictCursor)
     return conn
 
 @app.route('/')
