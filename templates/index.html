@@ -39,48 +39,91 @@
         {% endfor %}
     </div>
 
+    <div id="paymentForm" style="display: none;">
+        <h2>Payment</h2>
+        <input type="text" id="firstName" placeholder="Enter your first name" required>
+        <input type="text" id="lastName" placeholder="Enter your last name" required>
+        <input type="email" id="email" placeholder="Enter your email" required>
+        <select id="paymentMethod" required>
+            <option value="" disabled selected>Select payment method</option>
+            <option value="venmo">Venmo</option>
+            <option value="cashapp">Cash App</option>
+            <option value="zelle">Zelle</option>
+            <option value="paypal">PayPal</option>
+        </select>
+        <button onclick="processPayment()">Pay</button>
+    </div>
+
     <script>
+        let names = {{ names|tojson }};
+        const nameGrid = document.getElementById('nameGrid');
+        let selectedName = null;
+
+        function fetchAvailableNames() {
+            fetch('/available_names')
+                .then(response => response.json())
+                .then(data => {
+                    names = data.names;
+                    renderGrid();
+                })
+                .catch(error => console.error('Error fetching available names:', error));
+        }
+
+        function renderGrid() {
+            nameGrid.innerHTML = '';
+            names.forEach(name => {
+                const nameBox = document.createElement('div');
+                nameBox.className = 'name-box';
+                nameBox.textContent = name;
+                nameBox.onclick = () => selectName(name);
+                nameGrid.appendChild(nameBox);
+            });
+        }
+
         function selectName(name) {
-            const email = prompt("Enter your email:");
-            const firstName = prompt("Enter your first name:");
-            const lastName = prompt("Enter your last name:");
-            const paymentMethod = prompt("Enter your payment method (venmo, cashapp, zelle, paypal):");
+            selectedName = name;
+            document.querySelectorAll('.name-box').forEach(box => {
+                box.classList.remove('selected');
+                if (box.textContent === name) {
+                    box.classList.add('selected');
+                }
+            });
+            document.getElementById('paymentForm').style.display = 'block';
+        }
+
+        function processPayment() {
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const email = document.getElementById('email').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
 
             fetch('/select_name', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    name,
-                    email,
-                    first_name: firstName,
-                    last_name: lastName,
-                    payment_method: paymentMethod
-                })
+                body: JSON.stringify({ name: selectedName, email: email, first_name: firstName, last_name: lastName, payment_method: paymentMethod }),
             })
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
                     alert(data.error);
                 } else {
-                    alert(data.message);
-                    location.reload();
+                    alert(`Payment successful! Your key pair is: ${data.key_pair}`);
+                    fetchAvailableNames();
+                    document.getElementById('paymentForm').style.display = 'none';
                 }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
             });
         }
 
-        function selectRandom() {
-            fetch('/random_name')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        alert(data.error);
-                    } else {
-                        selectName(data.name);
-                    }
-                });
-        }
+        // Poll the server every 5 seconds for updates
+        setInterval(fetchAvailableNames, 5000);
+
+        renderGrid();
     </script>
 </body>
 </html>
