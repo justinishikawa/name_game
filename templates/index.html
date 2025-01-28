@@ -22,15 +22,21 @@
         .tile:hover {
             background-color: #e0e0e0;
         }
+        .tile.random {
+            background-color: #d0d0d0;
+        }
+        .tile.random:hover {
+            background-color: #b0b0b0;
+        }
     </style>
 </head>
 <body>
     <h1>Select a Name</h1>
     <div class="tile-container">
+        <div class="tile random" onclick="selectRandom()">Random</div>
         {% for name in names %}
         <div class="tile" onclick="selectName('{{ name }}')">{{ name }}</div>
         {% endfor %}
-        <div class="tile" onclick="selectRandom()">Random</div>
     </div>
 
     <script>
