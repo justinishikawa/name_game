@@ -3,90 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Name Selection</title>
+    <title>Select a Name</title>
     <style>
-        /* Add your CSS styles here */
+        .tile-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .tile {
+            padding: 20px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            width: 100px;
+        }
+        .tile:hover {
+            background-color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
     <h1>Select a Name</h1>
-    <select id="nameSelect">
+    <div class="tile-container">
         {% for name in names %}
-        <option value="{{ name }}">{{ name }}</option>
+        <div class="tile" onclick="selectName('{{ name }}')">{{ name }}</div>
         {% endfor %}
-    </select>
-    <button id="randomButton">Random</button>
-    <input type="text" id="nameInput" placeholder="Selected Name">
-    <input type="email" id="emailInput" placeholder="Email">
-    <input type="text" id="firstNameInput" placeholder="First Name">
-    <input type="text" id="lastNameInput" placeholder="Last Name">
-    <h2>Payment Method</h2>
-    <select id="paymentMethod">
-        <option value="venmo">Venmo</option>
-        <option value="cashapp">Cash App</option>
-        <option value="zelle">Zelle</option>
-        <option value="paypal">PayPal</option>
-    </select>
-    <button id="reserveButton">Reserve</button>
+        <div class="tile" onclick="selectRandom()">Random</div>
+    </div>
 
     <script>
-        document.getElementById('nameSelect').addEventListener('change', function() {
-            document.getElementById('nameInput').value = this.value;
-        });
-
-        document.getElementById('randomButton').addEventListener('click', function() {
-            fetch('/random_name')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.name) {
-                        document.getElementById('nameInput').value = data.name;
-                        document.getElementById('nameSelect').value = data.name;
-                    } else {
-                        alert('No names available');
-                    }
-                })
-                .catch(error => console.error('Error:', error));
-        });
-
-        document.getElementById('reserveButton').addEventListener('click', function() {
-            const name = document.getElementById('nameInput').value;
-            const email = document.getElementById('emailInput').value;
-            const firstName = document.getElementById('firstNameInput').value;
-            const lastName = document.getElementById('lastNameInput').value;
-            const paymentMethod = document.getElementById('paymentMethod').value;
+        function selectName(name) {
+            const email = prompt("Enter your email:");
+            const firstName = prompt("Enter your first name:");
+            const lastName = prompt("Enter your last name:");
+            const paymentMethod = prompt("Enter your payment method (venmo, cashapp, zelle, paypal):");
 
             fetch('/select_name', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    name: name,
-                    email: email,
+                    name,
+                    email,
                     first_name: firstName,
                     last_name: lastName,
                     payment_method: paymentMethod
-                }),
+                })
             })
             .then(response => response.json())
             .then(data => {
-                if (data.message) {
-                    alert('Name reserved successfully!');
-                    // Update the UI to reflect the reservation
-                    const option = document.querySelector(`option[value="${name}"]`);
-                    if (option) {
-                        option.remove();
-                    }
-                    document.getElementById('nameInput').value = '';
-                    document.getElementById('emailInput').value = '';
-                    document.getElementById('firstNameInput').value = '';
-                    document.getElementById('lastNameInput').value = '';
+                if (data.error) {
+                    alert(data.error);
                 } else {
-                    alert('Error: ' + data.error);
+                    alert(data.message);
+                    location.reload();
                 }
-            })
-            .catch(error => console.error('Error:', error));
-        });
+            });
+        }
+
+        function selectRandom() {
+            fetch('/random_name')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        selectName(data.name);
+                    }
+                });
+        }
     </script>
 </body>
 </html>
