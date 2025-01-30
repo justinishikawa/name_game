@@ -51,7 +51,38 @@ app = Flask(__name__)
 initialize_database()
 
 # List of names
-names = ["Alice", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry"]
+names = [
+'Richard',
+'Bryan',
+'Harold',
+'Kai',
+'Axel',
+'Lucian',
+'James',
+'Alex',
+'Buddy',
+'Keanu',
+'Noah',
+'Lorcan',
+'John',
+'Sebastian',
+'Ash',
+'Helios',
+'Justin_Jr',
+'Sterling',
+'Koloa',
+'Victor',
+'Bayes',
+'Lucas',
+'Andrew',
+'Adam',
+'Anders',
+'Dylan',
+'Ian',
+'Dante',
+'Orion',
+'Marlo'
+]
 
 # Dictionary to store selected names and associated emails
 selected_names = {}
