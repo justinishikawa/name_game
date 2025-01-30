@@ -92,8 +92,23 @@ email_purchases = {}
 
 @app.route('/')
 def index():
-    available_names = [name for name in names if name not in selected_names]
+    available_names = get_available_names()
     return render_template('index.html', names=available_names)
+
+def get_available_names():
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name FROM selected_names")
+            reserved_names = [row['name'] for row in cur.fetchall()]
+    except Exception as e:
+        logging.error(f"Error fetching reserved names: {e}")
+        reserved_names = []
+    finally:
+        conn.close()
+
+    available_names = [name for name in names if name not in reserved_names]
+    return available_names
 
 @app.route('/select_name', methods=['POST'])
 def select_name():
@@ -147,7 +162,7 @@ def select_name():
 
 @app.route('/available_names', methods=['GET'])
 def available_names():
-    available_names = [name for name in names if name not in selected_names]
+    available_names = get_available_names()
     return jsonify({"names": available_names})
 
 @app.route('/payment', methods=['POST'])
@@ -186,7 +201,7 @@ def payment():
 
 @app.route('/random_name', methods=['GET'])
 def random_name():
-    available_names = [name for name in names if name not in selected_names]
+    available_names = get_available_names()
     if not available_names:
         return jsonify({"error": "No names available"}), 400
     

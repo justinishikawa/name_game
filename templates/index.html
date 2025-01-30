@@ -109,7 +109,7 @@
                 if (data.error) {
                     alert(data.error);
                 } else {
-                    alert(`Payment successful! Your key pair is: ${data.key_pair}`);
+                    alert(`Reservation successful!`);
                     fetchAvailableNames();
                     document.getElementById('paymentForm').style.display = 'none';
                 }
@@ -120,8 +120,8 @@
             });
         }
 
-        // Poll the server every 5 seconds for updates
-        setInterval(fetchAvailableNames, 5000);
+        // Poll the server every 1 seconds for updates
+        setInterval(fetchAvailableNames, 1000);
 
         renderGrid();
     </script>
