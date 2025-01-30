@@ -30,7 +30,7 @@ def initialize_database():
             DROP TABLE IF EXISTS selected_names;
             CREATE TABLE selected_names (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
+                name VARCHAR(255) NOT NULL UNIQUE,
                 email VARCHAR(255) NOT NULL,
                 first_name VARCHAR(255) NOT NULL,
                 last_name VARCHAR(255) NOT NULL,
@@ -128,14 +128,27 @@ def select_name():
     if not re.match(r"^[a-zA-Z\s]+$", last_name):
         return jsonify({"error": "Invalid last name format"}), 400
 
-    if name in selected_names:
-        return jsonify({"error": "Name already selected"}), 400
-
-    if name not in names:
-        return jsonify({"error": "Invalid name"}), 400
-
     if payment_method not in ["venmo", "cashapp", "zelle", "paypal"]:
         return jsonify({"error": "Invalid payment method"}), 400
+
+    try:
+        conn = get_db_connection()
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM selected_names WHERE name = %s", (name,))
+            if cur.fetchone():
+                return jsonify({"error": "Name already selected"}), 400
+
+            cur.execute(
+                "INSERT INTO selected_names (name, email, first_name, last_name, payment_method) VALUES (%s, %s, %s, %s, %s)",
+                (name, email, first_name, last_name, payment_method)
+            )
+        conn.commit()
+    except psycopg2.errors.UniqueViolation:
+        return jsonify({"error": "Name already selected"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        conn.close()
 
     selected_names[name] = email
     if email in email_purchases:
@@ -144,19 +157,6 @@ def select_name():
         email_purchases[email] = [name]
 
     names.remove(name)
-
-    try:
-        conn = get_db_connection()
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO selected_names (name, email, first_name, last_name, payment_method) VALUES (%s, %s, %s, %s, %s)",
-                (name, email, first_name, last_name, payment_method)
-            )
-        conn.commit()
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    finally:
-        conn.close()
 
     return jsonify({"message": "Name selected successfully"})
 
