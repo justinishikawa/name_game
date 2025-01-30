@@ -32,7 +32,7 @@
 </head>
 <body>
     <h1>Select a Name</h1>
-    <div class="tile-container">
+    <div class="tile-container" id="nameGrid">
         <div class="tile random" onclick="selectRandom()">Random</div>
         {% for name in names %}
         <div class="tile" onclick="selectName('{{ name }}')">{{ name }}</div>
@@ -73,7 +73,7 @@
             nameGrid.innerHTML = '';
             names.forEach(name => {
                 const nameBox = document.createElement('div');
-                nameBox.className = 'name-box';
+                nameBox.className = 'tile';
                 nameBox.textContent = name;
                 nameBox.onclick = () => selectName(name);
                 nameGrid.appendChild(nameBox);
@@ -82,7 +82,7 @@
 
         function selectName(name) {
             selectedName = name;
-            document.querySelectorAll('.name-box').forEach(box => {
+            document.querySelectorAll('.tile').forEach(box => {
                 box.classList.remove('selected');
                 if (box.textContent === name) {
                     box.classList.add('selected');
@@ -109,7 +109,7 @@
                 if (data.error) {
                     alert(data.error);
                 } else {
-                    alert(`Reservation successful!`);
+                    alert('Reservation Successful');
                     fetchAvailableNames();
                     document.getElementById('paymentForm').style.display = 'none';
                 }
@@ -120,7 +120,7 @@
             });
         }
 
-        // Poll the server every 1 seconds for updates
+        // Poll the server every 1 second for updates
         setInterval(fetchAvailableNames, 1000);
 
         renderGrid();
