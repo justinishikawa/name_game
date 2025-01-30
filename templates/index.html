@@ -71,7 +71,7 @@
 
         function renderGrid() {
             nameGrid.innerHTML = '';
-            names.forEach(name => {
+            names.sort().forEach(name => {  // Sort names before rendering
                 const nameBox = document.createElement('div');
                 nameBox.className = 'tile';
                 nameBox.textContent = name;
