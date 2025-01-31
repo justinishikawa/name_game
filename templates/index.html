@@ -32,12 +32,6 @@
         .nameTile:hover {
             background-color: #e0e0e0;
         }
-        .randomTile {
-            background-color: #d0d0d0;
-        }
-        .randomTile:hover {
-            background-color: #b0b0b0;
-        }
     </style>
 </head>
 <body>
@@ -74,7 +68,7 @@
 
         function renderGrid(names) {
             const nameGrid = document.getElementById('nameGrid');
-            nameGrid.innerHTML = '<div class="nameTile randomTile" onclick="selectRandom()">Random</div>';
+            nameGrid.innerHTML = '';
             names.sort().forEach(name => {
                 const nameBox = document.createElement('div');
                 nameBox.className = 'nameTile';
@@ -93,15 +87,6 @@
                 }
             });
             document.getElementById('paymentForm').style.display = 'block';
-        }
-
-        function selectRandom() {
-            fetch('/random_name')
-                .then(response => response.json())
-                .then(data => {
-                    selectName(data.name);
-                })
-                .catch(error => console.error('Error fetching random name:', error));
         }
 
         document.getElementById('selectionForm').addEventListener('submit', function(event) {

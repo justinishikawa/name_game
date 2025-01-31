@@ -8,12 +8,18 @@ import logging
 import random
 from datetime import datetime
 
+# Load environment variables from .env file
 load_dotenv()
+
+# Configure logging
 logging.basicConfig(level=logging.INFO)
+
+# Database connection details
 DATABASE_URI = os.getenv("DATABASE_URI")
 
 def get_db_connection():
-    return psycopg2.connect(DATABASE_URI, cursor_factory=RealDictCursor)
+    conn = psycopg2.connect(DATABASE_URI, cursor_factory=RealDictCursor)
+    return conn
 
 def initialize_database():
     logging.info("Initializing database...")
@@ -22,14 +28,14 @@ def initialize_database():
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("""
-            CREATE TABLE IF NOT EXISTS selected_names (
+            DROP TABLE IF EXISTS selected_names;
+            CREATE TABLE selected_names (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
                 email VARCHAR(255) NOT NULL,
                 first_name VARCHAR(255) NOT NULL,
                 last_name VARCHAR(255) NOT NULL,
-                payment_method VARCHAR(50) NOT NULL,
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                payment_method VARCHAR(50) NOT NULL
             );
             """)
         conn.commit()
@@ -45,16 +51,21 @@ def initialize_database():
 app = Flask(__name__)
 initialize_database()
 
+# List of names
 names = [
-    'Richard', 'Bryan', 'Harold', 'Kai', 'Axel', 'Lucian', 'James', 'Alex',
-    'Buddy', 'Keanu', 'Noah', 'Lorcan', 'John', 'Sebastian', 'Ash', 'Helios',
-    'Justin_Jr', 'Sterling', 'Koloa', 'Victor', 'Bayes', 'Lucas', 'Andrew',
-    'Adam', 'Anders', 'Dylan', 'Ian', 'Dante', 'Orion', 'Marlo'
+    'Richard', 'Bryan', 'Harold', 'Kai', 'Axel', 'Lucian', 'James', 'Alex', 'Buddy', 'Keanu', 'Noah', 'Lorcan', 'John', 'Sebastian', 'Ash', 'Helios', 'Justin_Jr', 'Sterling', 'Koloa', 'Victor', 'Bayes', 'Lucas', 'Andrew', 'Adam', 'Anders', 'Dylan', 'Ian', 'Dante', 'Orion', 'Marlo'
 ]
+
+# Dictionary to store selected names and associated emails
+selected_names = {}
+
+# Dictionary to store emails and their purchased names
+email_purchases = {}
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    available_names = get_available_names()
+    return render_template('index.html', names=available_names)
 
 def get_available_names():
     conn = get_db_connection()
@@ -67,8 +78,9 @@ def get_available_names():
         reserved_names = []
     finally:
         conn.close()
+
     available_names = [name for name in names if name not in reserved_names]
-    return ['Random'] + sorted(available_names)
+    return available_names
 
 @app.route('/available_names', methods=['GET'])
 def available_names():
@@ -98,12 +110,13 @@ def select_name():
     if payment_method not in ["venmo", "cashapp", "zelle", "paypal"]:
         return jsonify({"error": "Invalid payment method"}), 400
 
-    conn = get_db_connection()
     try:
+        conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("SELECT 1 FROM selected_names WHERE name = %s", (name,))
             if cur.fetchone():
                 return jsonify({"error": "Name already selected"}), 400
+
             cur.execute(
                 "INSERT INTO selected_names (name, email, first_name, last_name, payment_method) VALUES (%s, %s, %s, %s, %s)",
                 (name, email, first_name, last_name, payment_method)
@@ -116,6 +129,15 @@ def select_name():
         return jsonify({"error": "An error occurred while processing your request"}), 500
     finally:
         conn.close()
+
+    selected_names[name] = email
+    if email in email_purchases:
+        email_purchases[email].append(name)
+    else:
+        email_purchases[email] = [name]
+
+    names.remove(name)
+
     return jsonify({"message": "Name selected successfully"})
 
 @app.route('/random_name', methods=['GET'])
