@@ -32,16 +32,18 @@
         .nameTile:hover {
             background-color: #e0e0e0;
         }
-        #paymentForm {
-            display: none;
-            margin-top: 20px;
+        .randomTile {
+            background-color: #d0d0d0;
+        }
+        .randomTile:hover {
+            background-color: #b0b0b0;
         }
     </style>
 </head>
 <body>
     <h1>Select a Name</h1>
     <div id="nameGrid"></div>
-    <div id="paymentForm">
+    <div id="paymentForm" style="display: none;">
         <h2>Complete Your Selection</h2>
         <form id="selectionForm">
             <input type="text" id="firstName" placeholder="First Name" required>
@@ -61,42 +63,49 @@
     <script>
         let selectedName = '';
 
-        function fetchNames() {
+        function fetchAvailableNames() {
             fetch('/available_names')
                 .then(response => response.json())
                 .then(data => {
-                    const nameGrid = document.getElementById('nameGrid');
-                    nameGrid.innerHTML = '';
-                    data.names.forEach(name => {
-                        const tile = document.createElement('div');
-                        tile.className = 'nameTile';
-                        tile.textContent = name;
-                        tile.onclick = () => selectName(name);
-                        nameGrid.appendChild(tile);
-                    });
-                });
+                    renderGrid(data.names);
+                })
+                .catch(error => console.error('Error fetching available names:', error));
+        }
+
+        function renderGrid(names) {
+            const nameGrid = document.getElementById('nameGrid');
+            nameGrid.innerHTML = '<div class="nameTile randomTile" onclick="selectRandom()">Random</div>';
+            names.sort().forEach(name => {
+                const nameBox = document.createElement('div');
+                nameBox.className = 'nameTile';
+                nameBox.textContent = name;
+                nameBox.onclick = () => selectName(name);
+                nameGrid.appendChild(nameBox);
+            });
         }
 
         function selectName(name) {
-            if (name === 'Random') {
-                fetch('/random_name')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            alert(data.error);
-                        } else {
-                            selectedName = data.name;
-                            document.getElementById('paymentForm').style.display = 'block';
-                        }
-                    });
-            } else {
-                selectedName = name;
-                document.getElementById('paymentForm').style.display = 'block';
-            }
+            selectedName = name;
+            document.querySelectorAll('.nameTile').forEach(box => {
+                box.classList.remove('selected');
+                if (box.textContent === name) {
+                    box.classList.add('selected');
+                }
+            });
+            document.getElementById('paymentForm').style.display = 'block';
         }
 
-        document.getElementById('selectionForm').onsubmit = function(e) {
-            e.preventDefault();
+        function selectRandom() {
+            fetch('/random_name')
+                .then(response => response.json())
+                .then(data => {
+                    selectName(data.name);
+                })
+                .catch(error => console.error('Error fetching random name:', error));
+        }
+
+        document.getElementById('selectionForm').addEventListener('submit', function(event) {
+            event.preventDefault();
             const formData = {
                 name: selectedName,
                 first_name: document.getElementById('firstName').value,
@@ -117,14 +126,18 @@
                 if (data.error) {
                     alert(data.error);
                 } else {
-                    alert(data.message);
+                    alert('Reservation Successful');
                     document.getElementById('paymentForm').style.display = 'none';
-                    fetchNames();
+                    fetchAvailableNames();
                 }
             });
-        };
+        });
 
-        fetchNames();
+        // Poll the server every 5 seconds for updates
+        setInterval(fetchAvailableNames, 5000);
+
+        // Initial fetch of available names
+        fetchAvailableNames();
     </script>
 </body>
 </html>
