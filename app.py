@@ -67,7 +67,8 @@ def get_available_names():
         reserved_names = []
     finally:
         conn.close()
-    return [name for name in names if name not in reserved_names]
+    available_names = [name for name in names if name not in reserved_names]
+    return ['Random'] + sorted(available_names)
 
 @app.route('/available_names', methods=['GET'])
 def available_names():
@@ -115,12 +116,11 @@ def select_name():
         return jsonify({"error": "An error occurred while processing your request"}), 500
     finally:
         conn.close()
-
     return jsonify({"message": "Name selected successfully"})
 
 @app.route('/random_name', methods=['GET'])
 def random_name():
-    available_names = get_available_names()
+    available_names = get_available_names()[1:]  # Exclude 'Random'
     if not available_names:
         return jsonify({"error": "No names available"}), 400
     return jsonify({"name": random.choice(available_names)})

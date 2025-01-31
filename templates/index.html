@@ -4,18 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Select a Name</title>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <style>
-        .loading { opacity: 0.5; pointer-events: none; }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #nameGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            width: 100%;
+            max-width: 800px;
+        }
+        .nameTile {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+        .nameTile:hover {
+            background-color: #e0e0e0;
+        }
+        #paymentForm {
+            display: none;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <h1>Select a Name</h1>
-    <button id="randomButton">Random</button>
-    <div id="nameList"></div>
-    <div id="paymentForm" style="display:none;">
-        <h2>Payment</h2>
-        <form id="reserveForm">
+    <div id="nameGrid"></div>
+    <div id="paymentForm">
+        <h2>Complete Your Selection</h2>
+        <form id="selectionForm">
             <input type="text" id="firstName" placeholder="First Name" required>
             <input type="text" id="lastName" placeholder="Last Name" required>
             <input type="email" id="email" placeholder="Email" required>
@@ -26,72 +54,77 @@
                 <option value="zelle">Zelle</option>
                 <option value="paypal">PayPal</option>
             </select>
-            <input type="hidden" id="selectedName">
             <button type="submit">Reserve</button>
         </form>
     </div>
 
     <script>
-    let lastFetchTimestamp = '';
+        let selectedName = '';
 
-    async function fetchAvailableNames() {
-        try {
-            const response = await axios.get('/available_names');
-            if (response.data.timestamp !== lastFetchTimestamp) {
-                lastFetchTimestamp = response.data.timestamp;
-                const nameList = document.getElementById('nameList');
-                nameList.innerHTML = '';
-                response.data.names.forEach(name => {
-                    const button = document.createElement('button');
-                    button.textContent = name;
-                    button.onclick = () => selectName(name);
-                    nameList.appendChild(button);
+        function fetchNames() {
+            fetch('/available_names')
+                .then(response => response.json())
+                .then(data => {
+                    const nameGrid = document.getElementById('nameGrid');
+                    nameGrid.innerHTML = '';
+                    data.names.forEach(name => {
+                        const tile = document.createElement('div');
+                        tile.className = 'nameTile';
+                        tile.textContent = name;
+                        tile.onclick = () => selectName(name);
+                        nameGrid.appendChild(tile);
+                    });
                 });
+        }
+
+        function selectName(name) {
+            if (name === 'Random') {
+                fetch('/random_name')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert(data.error);
+                        } else {
+                            selectedName = data.name;
+                            document.getElementById('paymentForm').style.display = 'block';
+                        }
+                    });
+            } else {
+                selectedName = name;
+                document.getElementById('paymentForm').style.display = 'block';
             }
-        } catch (error) {
-            console.error('Error fetching available names:', error);
         }
-    }
 
-    function selectName(name) {
-        document.getElementById('selectedName').value = name;
-        document.getElementById('paymentForm').style.display = 'block';
-    }
-
-    document.getElementById('randomButton').addEventListener('click', async () => {
-        try {
-            const response = await axios.get('/random_name');
-            selectName(response.data.name);
-        } catch (error) {
-            console.error('Error getting random name:', error);
-        }
-    });
-
-    document.getElementById('reserveForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const form = e.target;
-        form.classList.add('loading');
-        try {
-            const response = await axios.post('/select_name', {
-                name: document.getElementById('selectedName').value,
+        document.getElementById('selectionForm').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = {
+                name: selectedName,
                 first_name: document.getElementById('firstName').value,
                 last_name: document.getElementById('lastName').value,
                 email: document.getElementById('email').value,
                 payment_method: document.getElementById('paymentMethod').value
-            });
-            alert(response.data.message);
-            form.reset();
-            document.getElementById('paymentForm').style.display = 'none';
-            fetchAvailableNames();
-        } catch (error) {
-            alert(error.response?.data?.error || 'An error occurred');
-        } finally {
-            form.classList.remove('loading');
-        }
-    });
+            };
 
-    fetchAvailableNames();
-    setInterval(fetchAvailableNames, 5000);
+            fetch('/select_name', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    alert(data.message);
+                    document.getElementById('paymentForm').style.display = 'none';
+                    fetchNames();
+                }
+            });
+        };
+
+        fetchNames();
     </script>
 </body>
 </html>
