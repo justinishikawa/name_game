@@ -126,4 +126,10 @@ def random_name():
     return jsonify({"name": random.choice(available_names)})
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     app.run(debug=True)
+=======
+    app.run(debug=True)
+
+
+>>>>>>> 3b4d796 (async added to website)
