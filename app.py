@@ -28,7 +28,7 @@ def initialize_database():
         conn = get_db_connection()
         with conn.cursor() as cur:
             cur.execute("""
-            DROP TABLE IF EXISTS selected_names;
+            
             CREATE TABLE selected_names (
                 id SERIAL PRIMARY KEY,
                 name VARCHAR(255) NOT NULL UNIQUE,
