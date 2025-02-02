@@ -52,7 +52,7 @@ initialize_database()
 
 # List of names
 names = [
-    'Richard', 'Bryan', 'Harold', 'Kai', 'Axel', 'Lucian', 'James', 'Alex', 'Buddy', 'Keanu', 'Noah', 'Lorcan', 'John', 'Sebastian', 'Ash', 'Helios', 'Justin_Jr', 'Sterling', 'Koloa', 'Victor', 'Bayes', 'Lucas', 'Andrew', 'Adam', 'Anders', 'Dylan', 'Ian', 'Dante', 'Orion', 'Marlo'
+    'Richard', 'Bryan', 'Harold', 'Kai', 'Axel', 'Lucian', 'James', 'Alex', 'Buddy', 'Keanu', 'Noah', 'Lorcan', 'Leonardo', 'Sebastian', 'Ash', 'Helios', 'Justin_Jr', 'Sterling', 'Koloa', 'Victor', 'Bayes', 'Lukas', 'Andrew', 'Adam', 'Anders', 'Dylan', 'Ian', 'Dante', 'Orion', 'Marlo','Peter','Miles'
 ]
 
 # Dictionary to store selected names and associated emails
